@@ -1,0 +1,39 @@
+STANDBY:
+	-go to sleep mode, turn everything off
+	-hook up:
+		->DIALING
+	-incoming call:
+		->RINGING
+	-rotary dial up:
+		->DIALING_ACTIVE
+DIALING:
+	-rotary dial up:
+		->DIALING_ACTIVE
+	-hook down:
+		->STANDBY
+	-hook up:
+		-replace number with phonebook number
+		->PHONING
+	-3s passed and hook is up
+		-start call
+		->PHONING
+	-incoming call:
+		->?
+DIALING_ACTIVE:
+	-count clicks
+	-rotary dial down:
+		-add cipher to number
+		->DIALING
+	-hook down:
+		->STANDBY
+	-incoming call:
+		->?
+PHONING:
+	-hook down:
+		-close call
+		->STANDBY
+RINGING:
+	-hook up:
+		PHONING
+	-incoming call ended:
+		->STANDBY
