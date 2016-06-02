@@ -10,7 +10,7 @@
 #define HOOK_PIN 0
 #define DIAL_PIN 1
 #define TICK_PIN 2
-#define RING_PIN 3
+#define RING_PIN 7
 
 #define HOOK_UP_STATE HIGH
 #define DIAL_EN_STATE HIGH
