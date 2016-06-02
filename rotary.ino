@@ -23,6 +23,12 @@ Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 
 void (*state)();
 
+void RINGING();
+void PHONING();
+void STANBY();
+void DIALING();
+void DIALING_ACTIVE();
+
 void setup() {
 	//save power
 	power_adc_disable();
@@ -104,7 +110,7 @@ void STANDBY(){
 	}
 }
 
-char digit;
+char digit=0;
 
 void DIALING(){
 	/*
@@ -112,9 +118,6 @@ void DIALING(){
 		->DIALING_ACTIVE
 	-hook down:
 		->STANDBY
-	-hook up:
-		-replace number with phonebook number
-		->PHONING
 	-3s passed and hook is up
 		-start call
 		->PHONING
@@ -122,24 +125,36 @@ void DIALING(){
 		->?
   	*/
 	if(Serial) Serial.println("State: DIALING");
-	//TODO:properly implement DIALING
 
 	static char number[30];
-	static char numberIndex;
+	static char numberLength=0;
 
 	//add digit to number to be called
 	if(digit){
-		number[numberIndex]=digit;
+		number[numberLength]=digit;
 		digit=0;
-		numberIndex++;
-		number[numberIndex]=0;
+		numberLength++;
 	}
 
+	//TODO: implement timer interrupt
 	enableSleepInterrupt();
 	goToSleep();
+
+	if(digitalRead(HOOK_PIN)!=HOOK_UP_STATE){
+		//hook has been laid down, return to STANDBY
+		numberLength=0;
+		state=&STANDBY;
+	}else if(digitalRead(DIAL_PIN)==DIAL_EN_STATE){
+		state=&DIALING_ACTIVE;
+	//TODO: implement ringing while dialing behaviour
+	}else{
+		number[numberLength]=0;
+		fona.callPhone(number);
+		state=&PHONING;
+	}
 }
 
-char digitMap[]={0,'1','2','3','4','5','6','7','8','9','0'};
+const char digitMap[]={0,'1','2','3','4','5','6','7','8','9','0'};
 
 void DIALING_ACTIVE(){
 	/*
@@ -153,7 +168,6 @@ void DIALING_ACTIVE(){
 		->?
   	*/
 	if(Serial) Serial.println("State: DIALING_ACTIVE");
-	//TODO: implement DIALING_ACTIVE
 
 	//wait a few msecs for debouncing
 	delay(50);
