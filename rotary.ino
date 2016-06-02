@@ -139,6 +139,8 @@ void DIALING(){
 	goToSleep();
 }
 
+char digitMap[]={0,'1','2','3','4','5','6','7','8','9','0'};
+
 void DIALING_ACTIVE(){
 	/*
 	-count clicks
@@ -152,6 +154,37 @@ void DIALING_ACTIVE(){
   	*/
 	if(Serial) Serial.println("State: DIALING_ACTIVE");
 	//TODO: implement DIALING_ACTIVE
+
+	//wait a few msecs for debouncing
+	delay(50);
+
+	unsigned char ticks=0;
+	char tickState=(digitalRead(TICK_PIN)==TICK_EN_STATE);
+	char lastTickState=tickState;
+
+	while(digitalRead(DIAL_PIN)==DIAL_EN_STATE && digitalRead(HOOK_PIN)==HOOK_UP_STATE){
+		lastTickState=tickState;
+		
+		//check for rising edge
+		tickState=(digitalRead(TICK_PIN)==TICK_EN_STATE);
+		if(lastTickState!=tickState && tickState){
+			ticks++;
+		}
+		//wait a few msecs for debouncing
+		delay(30);
+	}
+
+	if(digitalRead(HOOK_PIN)!=HOOK_UP_STATE){
+		digit=0;
+		state=&STANDBY;
+	}else if(digitalRead(DIAL_PIN)!=DIAL_EN_STATE){
+		if(ticks < 11){
+			digit=digitMap[ticks];
+		}else{
+			digit=0;
+		}
+		state=&DIALING;
+	}
 }
 
 void PHONING(){
@@ -162,7 +195,8 @@ void PHONING(){
 	*/
 	if(Serial) Serial.println("State: PHONING");
 	
-	//TODO: sleep for ~100ms before reading pins (for debouncing)
+	//wait a few msecs for debouncing
+	delay(100);
 
 	enableSleepInterrupt();
 	goToSleep();
