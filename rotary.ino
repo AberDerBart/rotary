@@ -12,10 +12,14 @@
 #define TICK_PIN 2
 #define RING_PIN 7
 
-#define HOOK_UP_STATE HIGH
-#define DIAL_EN_STATE HIGH
-#define TICK_EN_STATE HIGH
-#define RINGING_STATE HIGH
+#define HOOK_UP_STATE LOW
+#define DIAL_EN_STATE LOW
+#define TICK_EN_STATE LOW
+#define RINGING_STATE LOW
+
+#define HOOK_INTERRUPT 2
+#define DIAL_INTERRUPT 
+#define RING_INTERRUPT 0x0e
 
 SoftwareSerial fonaSS = SoftwareSerial(FONA_TX, FONA_RX);
 SoftwareSerial *fonaSerial = &fonaSS;
@@ -39,16 +43,15 @@ void setup() {
 	power_twi_disable();
 
 	//prepare the pins
-	pinMode(HOOK_PIN,INPUT);
-	pinMode(DIAL_PIN,INPUT);
-	pinMode(TICK_PIN,INPUT);
-	pinMode(RING_PIN,INPUT);
+	pinMode(HOOK_PIN,INPUT_PULLUP);
+	pinMode(DIAL_PIN,INPUT_PULLUP);
+	pinMode(TICK_PIN,INPUT_PULLUP);
+	pinMode(RING_PIN,INPUT_PULLUP);
 
 	//setup fona
 	fonaSerial->begin(4800);
 	fona.begin(*fonaSerial);
-
-	//Wait for serial connection to be ready
+	//wait for serial
 	while(!Serial);
 
 	//open serial with 115200 baud
@@ -59,29 +62,30 @@ void setup() {
 
 	//set initial state
 	state=&STANDBY;
+	pinMode(13, OUTPUT);
 }
 
 void loop() {
 	(*state)();
 }
 
-void enableSleepInterrupt(){
-	attachInterrupt(digitalPinToInterrupt(HOOK_PIN),&interrupt,CHANGE);
-	attachInterrupt(digitalPinToInterrupt(DIAL_PIN),&interrupt,CHANGE);
-	attachInterrupt(digitalPinToInterrupt(RING_PIN),&interrupt,CHANGE);
-}
-
-void goToSleep(){
-	set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-	sleep_enable();
-	sleep_mode();
-	sleep_disable();
-}
-
-void interrupt(){
+void sleepPinInterrupt(void){
 	detachInterrupt(digitalPinToInterrupt(HOOK_PIN));
-	detachInterrupt(digitalPinToInterrupt(DIAL_PIN));
-	detachInterrupt(digitalPinToInterrupt(RING_PIN));
+}
+
+void enterSleepMode(void){    
+	Serial.println(F("SLEEP"));
+	delay(100);
+	sleep_enable();
+	cli();
+	attachInterrupt(digitalPinToInterrupt(HOOK_PIN), sleepPinInterrupt, CHANGE);
+	set_sleep_mode(SLEEP_MODE_IDLE);  
+	power_all_disable();
+	sei();
+	sleep_cpu();
+	sleep_disable();
+	power_all_enable();
+	Serial.println(F("WACH"));
 }
 
 void STANDBY(){
@@ -95,8 +99,8 @@ void STANDBY(){
 		->DIALING_ACTIVE
 	*/
 	if(Serial) Serial.println("State: STANDBY");
-	enableSleepInterrupt();
-	goToSleep();
+
+	enterSleepMode();
 
 	if(digitalRead(RING_PIN)==RINGING_STATE){
 		//if its ringing, switch to RINGING 
@@ -137,8 +141,7 @@ void DIALING(){
 	}
 
 	//TODO: implement timer interrupt
-	enableSleepInterrupt();
-	goToSleep();
+	enterSleepMode();
 
 	if(digitalRead(HOOK_PIN)!=HOOK_UP_STATE){
 		//hook has been laid down, return to STANDBY
@@ -148,9 +151,10 @@ void DIALING(){
 		state=&DIALING_ACTIVE;
 	//TODO: implement ringing while dialing behaviour
 	}else{
+		//TODO: implement proper timeout for calling
 		number[numberLength]=0;
-		fona.callPhone(number);
-		state=&PHONING;
+		//fona.callPhone(number);
+		//state=&PHONING;
 	}
 }
 
@@ -212,8 +216,7 @@ void PHONING(){
 	//wait a few msecs for debouncing
 	delay(100);
 
-	enableSleepInterrupt();
-	goToSleep();
+	enterSleepMode();
 	
 	if(digitalRead(HOOK_PIN)!=HOOK_UP_STATE){
 		//laid down hook, hang up and goto STANDBY
@@ -230,8 +233,7 @@ void RINGING(){
 		->STANDBY
 	*/
 	if(Serial) Serial.println("State: RINGING");
-	enableSleepInterrupt();
-	goToSleep();
+	enterSleepMode();
 
 	if(digitalRead(HOOK_PIN)==HOOK_UP_STATE){
 		//hook has been picked up
