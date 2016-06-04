@@ -17,10 +17,6 @@
 #define TICK_EN_STATE LOW
 #define RINGING_STATE LOW
 
-#define HOOK_INTERRUPT 2
-#define DIAL_INTERRUPT 
-#define RING_INTERRUPT 0x0e
-
 SoftwareSerial fonaSS = SoftwareSerial(FONA_TX, FONA_RX);
 SoftwareSerial *fonaSerial = &fonaSS;
 Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
@@ -34,14 +30,6 @@ void DIALING();
 void DIALING_ACTIVE();
 
 void setup() {
-	//save power
-	power_adc_disable();
-	power_spi_disable();
-//	power_timer0_disable();
-	power_timer1_disable();
-	power_timer2_disable();
-	power_twi_disable();
-
 	//prepare the pins
 	pinMode(HOOK_PIN,INPUT_PULLUP);
 	pinMode(DIAL_PIN,INPUT_PULLUP);
