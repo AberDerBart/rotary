@@ -2,6 +2,7 @@
 #include <avr/power.h>
 #include "Adafruit_FONA.h"
 #include <SoftwareSerial.h>
+#include <TimerOne.h>
 
 #define FONA_RX 2
 #define FONA_TX 3
@@ -11,10 +12,11 @@
 #define DIAL_PIN 1
 #define TICK_PIN 2
 #define RING_PIN 7
+#define RING_OUT_PIN 
 
 #define HOOK_UP_STATE LOW
 #define DIAL_EN_STATE LOW
-#define TICK_EN_STATE LOW
+#define TICK_EN_STATE HIGH
 #define RINGING_STATE LOW
 
 SoftwareSerial fonaSS = SoftwareSerial(FONA_TX, FONA_RX);
@@ -48,17 +50,34 @@ void setup() {
 	Serial.println("programmed by AberDerBart");
 	Serial.println("based on Adafruit Feather FONA, thanks, guys!");
 
+	//setup timer (for calling after entering a digit)
+	Timer1.initialize(3000 * 1000);
+
 	//set initial state
 	state=&STANDBY;
 	pinMode(13, OUTPUT);
 }
 
+
 void loop() {
 	(*state)();
 }
 
+void printPinStates(){
+	Serial.println("Pin states:");
+	Serial.print("HOOK: ");
+	Serial.println(digitalRead(HOOK_PIN)==LOW ? "LOW" : "HIGH");
+	Serial.print("DIAL: ");
+	Serial.println(digitalRead(DIAL_PIN)==LOW ? "LOW" : "HIGH");
+	Serial.print("TICK: ");
+	Serial.println(digitalRead(TICK_PIN)==LOW ? "LOW" : "HIGH");
+	Serial.print("RING: ");
+	Serial.println(digitalRead(RING_PIN)==LOW ? "LOW" : "HIGH");
+}
+
 void sleepPinInterrupt(void){
 	detachInterrupt(digitalPinToInterrupt(HOOK_PIN));
+	detachInterrupt(digitalPinToInterrupt(DIAL_PIN));
 }
 
 void enterSleepMode(void){    
@@ -67,6 +86,7 @@ void enterSleepMode(void){
 	sleep_enable();
 	cli();
 	attachInterrupt(digitalPinToInterrupt(HOOK_PIN), sleepPinInterrupt, CHANGE);
+	attachInterrupt(digitalPinToInterrupt(DIAL_PIN), sleepPinInterrupt, CHANGE);
 	set_sleep_mode(SLEEP_MODE_IDLE);  
 	power_all_disable();
 	sei();
@@ -89,6 +109,8 @@ void STANDBY(){
 	if(Serial) Serial.println("State: STANDBY");
 
 	enterSleepMode();
+	
+	printPinStates();
 
 	if(digitalRead(RING_PIN)==RINGING_STATE){
 		//if its ringing, switch to RINGING 
@@ -103,6 +125,11 @@ void STANDBY(){
 }
 
 char digit=0;
+
+char dialTimeout=0;
+void dialing_timer_interrupt(){
+	dialTimeout=1;
+}
 
 void DIALING(){
 	/*
@@ -121,6 +148,9 @@ void DIALING(){
 	static char number[30];
 	static char numberLength=0;
 
+
+	dialTimeout=0;
+
 	//add digit to number to be called
 	if(digit){
 		number[numberLength]=digit;
@@ -129,7 +159,18 @@ void DIALING(){
 	}
 
 	//TODO: implement timer interrupt
+	if(numberLength){
+		Timer1.start();
+		Timer1.attachInterrupt(&dialing_timer_interrupt);
+	}
+
+	number[numberLength]=0;
+	Serial.println(number);
+	
 	enterSleepMode();
+	Timer1.detachInterrupt();
+
+	printPinStates();
 
 	if(digitalRead(HOOK_PIN)!=HOOK_UP_STATE){
 		//hook has been laid down, return to STANDBY
@@ -138,7 +179,7 @@ void DIALING(){
 	}else if(digitalRead(DIAL_PIN)==DIAL_EN_STATE){
 		state=&DIALING_ACTIVE;
 	//TODO: implement ringing while dialing behaviour
-	}else{
+	}else if(dialTimeout){
 		//TODO: implement proper timeout for calling
 		number[numberLength]=0;
 		//fona.callPhone(number);
@@ -205,6 +246,8 @@ void PHONING(){
 	delay(100);
 
 	enterSleepMode();
+
+	printPinStates();
 	
 	if(digitalRead(HOOK_PIN)!=HOOK_UP_STATE){
 		//laid down hook, hang up and goto STANDBY
@@ -220,8 +263,12 @@ void RINGING(){
 	-incoming call ended:
 		->STANDBY
 	*/
+	//TODO: implement ringing
+
 	if(Serial) Serial.println("State: RINGING");
 	enterSleepMode();
+
+	printPinStates();
 
 	if(digitalRead(HOOK_PIN)==HOOK_UP_STATE){
 		//hook has been picked up
