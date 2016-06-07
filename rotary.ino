@@ -2,7 +2,6 @@
 #include <avr/power.h>
 #include "Adafruit_FONA.h"
 #include <SoftwareSerial.h>
-#include <TimerOne.h>
 
 #define FONA_RX 2
 #define FONA_TX 3
@@ -50,9 +49,6 @@ void setup() {
 	Serial.println("programmed by AberDerBart");
 	Serial.println("based on Adafruit Feather FONA, thanks, guys!");
 
-	//setup timer (for calling after entering a digit)
-	Timer1.initialize(3000 * 1000);
-
 	//set initial state
 	state=&STANDBY;
 	pinMode(13, OUTPUT);
@@ -80,7 +76,7 @@ void sleepPinInterrupt(void){
 	detachInterrupt(digitalPinToInterrupt(DIAL_PIN));
 }
 
-void enterSleepMode(void){    
+void enterSleepMode(){    
 	Serial.println(F("SLEEP"));
 	delay(100);
 	sleep_enable();
@@ -126,11 +122,6 @@ void STANDBY(){
 
 char digit=0;
 
-char dialTimeout=0;
-void dialing_timer_interrupt(){
-	dialTimeout=1;
-}
-
 void DIALING(){
 	/*
 	-rotary dial up:
@@ -145,45 +136,47 @@ void DIALING(){
   	*/
 	if(Serial) Serial.println("State: DIALING");
 
-	static char number[30];
+	static char number[50];
 	static char numberLength=0;
-
-
-	dialTimeout=0;
+	unsigned long startMillis=millis();
 
 	//add digit to number to be called
-	if(digit){
+	if(digit && numberLength<49){
 		number[numberLength]=digit;
 		digit=0;
 		numberLength++;
 	}
 
-	//TODO: implement timer interrupt
-	if(numberLength){
-		Timer1.start();
-		Timer1.attachInterrupt(&dialing_timer_interrupt);
-	}
-
 	number[numberLength]=0;
 	Serial.println(number);
 	
-	enterSleepMode();
-	Timer1.detachInterrupt();
+	//do busy wait, as arduino timer libraries don't work properly
+	//TODO: implement this properly, if needed with hardware registers...
+	char hookState=digitalRead(HOOK_PIN);
+	char dialState=digitalRead(DIAL_PIN);
+
+	while(hookState==HOOK_UP_STATE
+		&& dialState!=DIAL_EN_STATE
+		&& millis()-startMillis < 3000){
+			hookState=digitalRead(HOOK_PIN);
+			dialState=digitalRead(DIAL_PIN);
+	}
 
 	printPinStates();
 
-	if(digitalRead(HOOK_PIN)!=HOOK_UP_STATE){
+	if(hookState!=HOOK_UP_STATE){
 		//hook has been laid down, return to STANDBY
 		numberLength=0;
 		state=&STANDBY;
-	}else if(digitalRead(DIAL_PIN)==DIAL_EN_STATE){
+	}else if(dialState==DIAL_EN_STATE){
 		state=&DIALING_ACTIVE;
 	//TODO: implement ringing while dialing behaviour
-	}else if(dialTimeout){
-		//TODO: implement proper timeout for calling
+	//-> just ignore it/pretend to be occupied?! would match a rotary phones behaviour...
+	}else if(numberLength>0){
 		number[numberLength]=0;
 		//fona.callPhone(number);
-		//state=&PHONING;
+		numberLength=0;
+		state=&PHONING;
 	}
 }
 
@@ -251,7 +244,7 @@ void PHONING(){
 	
 	if(digitalRead(HOOK_PIN)!=HOOK_UP_STATE){
 		//laid down hook, hang up and goto STANDBY
-		fona.hangUp();
+		//fona.hangUp();
 		state=&STANDBY;
 	}
 }
@@ -272,7 +265,8 @@ void RINGING(){
 
 	if(digitalRead(HOOK_PIN)==HOOK_UP_STATE){
 		//hook has been picked up
-		if(fona.pickUp()){
+		if(true){
+		//if(fona.pickUp()){
 			//if call is still active, go to phoning
 			state=&PHONING;
 		}else{
