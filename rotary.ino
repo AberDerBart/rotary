@@ -3,15 +3,16 @@
 #include "Adafruit_FONA.h"
 #include <SoftwareSerial.h>
 
-#define FONA_RX 2
-#define FONA_TX 3
+#define FONA_RX 9
+#define FONA_TX 8
 #define FONA_RST 4
+#define FONA_RI 7
 
 #define HOOK_PIN 0
 #define DIAL_PIN 1
 #define TICK_PIN 2
 #define RING_PIN 7
-#define RING_OUT_PIN 
+#define RING_OUT_PIN 13
 
 #define HOOK_UP_STATE LOW
 #define DIAL_EN_STATE LOW
@@ -36,10 +37,15 @@ void setup() {
 	pinMode(DIAL_PIN,INPUT_PULLUP);
 	pinMode(TICK_PIN,INPUT_PULLUP);
 	pinMode(RING_PIN,INPUT_PULLUP);
+	pinMode(RING_OUT_PIN,OUTPUT);
 
 	//setup fona
 	fonaSerial->begin(4800);
 	fona.begin(*fonaSerial);
+
+	fona.setAudio(FONA_EXTAUDIO);
+	fona.setVolume(10);
+
 	//wait for serial
 	while(!Serial);
 
@@ -51,7 +57,6 @@ void setup() {
 
 	//set initial state
 	state=&STANDBY;
-	pinMode(13, OUTPUT);
 }
 
 
@@ -77,7 +82,7 @@ void sleepPinInterrupt(void){
 }
 
 void enterSleepMode(){    
-	Serial.println(F("SLEEP"));
+	//Serial.println(F("SLEEP"));
 	delay(100);
 	sleep_enable();
 	cli();
@@ -89,7 +94,7 @@ void enterSleepMode(){
 	sleep_cpu();
 	sleep_disable();
 	power_all_enable();
-	Serial.println(F("WACH"));
+	//Serial.println(F("WACH"));
 }
 
 void STANDBY(){
@@ -106,7 +111,7 @@ void STANDBY(){
 
 	enterSleepMode();
 	
-	printPinStates();
+	//printPinStates();
 
 	if(digitalRead(RING_PIN)==RINGING_STATE){
 		//if its ringing, switch to RINGING 
@@ -162,7 +167,7 @@ void DIALING(){
 			dialState=digitalRead(DIAL_PIN);
 	}
 
-	printPinStates();
+	//printPinStates();
 
 	if(hookState!=HOOK_UP_STATE){
 		//hook has been laid down, return to STANDBY
@@ -174,7 +179,11 @@ void DIALING(){
 	//-> just ignore it/pretend to be occupied?! would match a rotary phones behaviour...
 	}else if(numberLength>0){
 		number[numberLength]=0;
-		//fona.callPhone(number);
+		if(!fona.callPhone(number)){
+			Serial.println("Call failed!");
+		}else{
+			Serial.println("Calling...");
+		}
 		numberLength=0;
 		state=&PHONING;
 	}
@@ -209,6 +218,7 @@ void DIALING_ACTIVE(){
 		tickState=(digitalRead(TICK_PIN)==TICK_EN_STATE);
 		if(lastTickState!=tickState && tickState){
 			ticks++;
+			Serial.println("TICK");
 		}
 		//wait a few msecs for debouncing
 		delay(30);
@@ -223,6 +233,8 @@ void DIALING_ACTIVE(){
 		}else{
 			digit=0;
 		}
+		Serial.print("Ticks: ");
+		Serial.println(ticks);
 		state=&DIALING;
 	}
 }
@@ -240,11 +252,11 @@ void PHONING(){
 
 	enterSleepMode();
 
-	printPinStates();
+	//printPinStates();
 	
 	if(digitalRead(HOOK_PIN)!=HOOK_UP_STATE){
 		//laid down hook, hang up and goto STANDBY
-		//fona.hangUp();
+		fona.hangUp();
 		state=&STANDBY;
 	}
 }
@@ -256,24 +268,40 @@ void RINGING(){
 	-incoming call ended:
 		->STANDBY
 	*/
-	//TODO: implement ringing
 
 	if(Serial) Serial.println("State: RINGING");
-	enterSleepMode();
 
-	printPinStates();
+	//TODO: build busy wait loop, ringing the bell
+	//TODO: further enhance this to use a timer
+	char hookState=digitalRead(HOOK_PIN);
+	char ringState=digitalRead(RING_PIN);
+	unsigned long startMillis=millis();
+	char ringOut=HIGH;
 
-	if(digitalRead(HOOK_PIN)==HOOK_UP_STATE){
+	digitalWrite(RING_OUT_PIN,HIGH);
+
+	while(ringState==RINGING_STATE && hookState!=HOOK_UP_STATE){
+		if(millis()-startMillis>2500){
+			ringOut=((ringOut==HIGH)? LOW : HIGH);
+			digitalWrite(RING_OUT_PIN,ringOut);
+			startMillis=millis();
+		}
+		hookState=digitalRead(HOOK_PIN);
+		ringState=digitalRead(RING_PIN);
+	}
+
+	digitalWrite(RING_OUT_PIN,LOW);
+
+	if(hookState==HOOK_UP_STATE){
 		//hook has been picked up
-		if(true){
-		//if(fona.pickUp()){
+		if(fona.pickUp()){
 			//if call is still active, go to phoning
 			state=&PHONING;
 		}else{
 			//if call is not ative anymore, go to dialing 
 			state=&DIALING;
 		}
-	}else if(digitalRead(RING_PIN)!=RINGING_STATE){
+	}else if(ringState!=RINGING_STATE){
 		//missed the call, goto STANDBY
 		state=&STANDBY;
 	}
