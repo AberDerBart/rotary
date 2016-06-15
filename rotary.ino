@@ -8,13 +8,13 @@
 #define FONA_RST 4
 #define FONA_RI 7
 
-#define HOOK_PIN 0
+#define HOOK_PIN 2
 #define DIAL_PIN 1
-#define TICK_PIN 2
+#define TICK_PIN 0
 #define RING_PIN 7
-#define RING_OUT_PIN 13
+#define RING_OUT_PIN 12
 
-#define HOOK_UP_STATE LOW
+#define HOOK_UP_STATE HIGH
 #define DIAL_EN_STATE LOW
 #define TICK_EN_STATE HIGH
 #define RINGING_STATE LOW
@@ -47,7 +47,7 @@ void setup() {
 	fona.setVolume(10);
 
 	//wait for serial
-	while(!Serial);
+	//while(!Serial);
 
 	//open serial with 115200 baud
 	Serial.begin(115200);
@@ -218,7 +218,6 @@ void DIALING_ACTIVE(){
 		tickState=(digitalRead(TICK_PIN)==TICK_EN_STATE);
 		if(lastTickState!=tickState && tickState){
 			ticks++;
-			Serial.println("TICK");
 		}
 		//wait a few msecs for debouncing
 		delay(30);
@@ -233,8 +232,6 @@ void DIALING_ACTIVE(){
 		}else{
 			digit=0;
 		}
-		Serial.print("Ticks: ");
-		Serial.println(ticks);
 		state=&DIALING;
 	}
 }
