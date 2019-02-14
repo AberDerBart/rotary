@@ -13,11 +13,14 @@
 #define TICK_PIN 0
 #define RING_PIN 7
 #define RING_OUT_PIN 12
+#define SLEEP_PIN 5
 
 #define HOOK_UP_STATE HIGH
 #define DIAL_EN_STATE LOW
 #define TICK_EN_STATE HIGH
 #define RINGING_STATE LOW
+#define SLEEP_STATE HIGH
+#define WAKE_STATE LOW
 
 SoftwareSerial fonaSS = SoftwareSerial(FONA_TX, FONA_RX);
 SoftwareSerial *fonaSerial = &fonaSS;
@@ -33,12 +36,13 @@ void DIALING_ACTIVE();
 
 void setup() {
 	//prepare the pins
-	pinMode(HOOK_PIN,INPUT_PULLUP);
-	pinMode(DIAL_PIN,INPUT_PULLUP);
-	pinMode(TICK_PIN,INPUT_PULLUP);
-	pinMode(RING_PIN,INPUT_PULLUP);
-	pinMode(RING_OUT_PIN,OUTPUT);
-
+	pinMode(HOOK_PIN, INPUT_PULLUP);
+	pinMode(DIAL_PIN, INPUT_PULLUP);
+	pinMode(TICK_PIN, INPUT_PULLUP);
+	pinMode(RING_PIN, INPUT_PULLUP);
+	pinMode(RING_OUT_PIN, OUTPUT);
+  pinMode(SLEEP_PIN, OUTPUT);
+    
 	//setup fona
 	fonaSerial->begin(4800);
 	fona.begin(*fonaSerial);
@@ -88,6 +92,7 @@ void enterSleepMode(){
 	cli();
 	attachInterrupt(digitalPinToInterrupt(HOOK_PIN), sleepPinInterrupt, CHANGE);
 	attachInterrupt(digitalPinToInterrupt(DIAL_PIN), sleepPinInterrupt, CHANGE);
+  digitalWrite(SLEEP_PIN, SLEEP_STATE);
 	set_sleep_mode(SLEEP_MODE_IDLE);  
 	power_all_disable();
 	sei();
@@ -112,7 +117,8 @@ void STANDBY(){
 	enterSleepMode();
 	
 	//printPinStates();
-
+  digitalWrite(SLEEP_PIN, STATE_WAKE);
+  
 	if(digitalRead(RING_PIN)==RINGING_STATE){
 		//if its ringing, switch to RINGING 
 		state=&RINGING;
