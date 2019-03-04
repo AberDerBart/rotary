@@ -34,6 +34,8 @@ void STANBY();
 void DIALING();
 void DIALING_ACTIVE();
 
+int reset = 1;
+
 void setup() {
 	//prepare the pins
 	pinMode(HOOK_PIN, INPUT_PULLUP);
@@ -53,14 +55,14 @@ void setup() {
 
   digitalWrite(RING_OUT_PIN, LOW);
   digitalWrite(SLEEP_PIN, WAKE_STATE);
-	//wait for serial
-	//while(!Serial);
 
-	//open serial with 115200 baud
-	Serial.begin(115200);
-	Serial.println("ROTARY V0.1");
-	Serial.println("programmed by AberDerBart");
-	Serial.println("based on Adafruit Feather FONA, thanks, guys!");
+  if(Serial){
+	  //open serial with 115200 baud
+	  Serial.begin(115200);
+	  Serial.println("ROTARY V0.1");
+	  Serial.println("programmed by AberDerBart");
+	  Serial.println("based on Adafruit Feather FONA, thanks, guys!");
+  }
 
 	//set initial state
 	state=&STANDBY;
@@ -68,7 +70,31 @@ void setup() {
 
 
 void loop() {
+  updateSerial();
 	(*state)();
+}
+
+char* stateString(void* state){
+  if(state == &STANDBY) return "STANDBY";
+  if(state == &DIALING) return "DIALING";
+  if(state == &DIALING_ACTIVE) return "DIALING_ACTIVE";
+  if(state == &PHONING) return "PHONING";
+  if(state == &RINGING) return "RINGING";
+  return "INVALID";
+}
+
+void updateSerial(){
+  static void* lastState = NULL;
+  if(Serial){
+    if(lastState != state){
+      Serial.println(stateString(state));
+      lastState = state;
+      if(reset){
+        reset = 0;
+        Serial.println("reset");
+      }
+    }
+  }
 }
 
 void printPinStates(){
@@ -83,25 +109,22 @@ void printPinStates(){
 	Serial.println(digitalRead(RING_PIN)==LOW ? "LOW" : "HIGH");
 }
 
-void sleepPinInterrupt(void){
+/*void sleepPinInterrupt(void){
 	detachInterrupt(digitalPinToInterrupt(HOOK_PIN));
 	detachInterrupt(digitalPinToInterrupt(DIAL_PIN));
-}
+}*/
 
-void waitForPinChange(){    
-	//Serial.println(F("SLEEP"));
-	delay(100);
-	sleep_enable();
-	cli();
-	attachInterrupt(digitalPinToInterrupt(HOOK_PIN), sleepPinInterrupt, CHANGE);
-	attachInterrupt(digitalPinToInterrupt(DIAL_PIN), sleepPinInterrupt, CHANGE);
-	set_sleep_mode(SLEEP_MODE_IDLE);  
-	power_all_disable();
+void waitForPinChange(){/*
+  delay(100);
+
+  set_sleep_mode(SLEEP_MODE_IDLE);  
+  cli();
+  //attachInterrupt(digitalPinToInterrupt(HOOK_PIN), sleepPinInterrupt, CHANGE);
+  //attachInterrupt(digitalPinToInterrupt(DIAL_PIN), sleepPinInterrupt, CHANGE);
+  sleep_enable();
 	sei();
 	sleep_cpu();
-	sleep_disable();
-	power_all_enable();
-	//Serial.println(F("WACH"));
+	sleep_disable();*/
 }
 
 void enterSleepMode(){
@@ -119,8 +142,8 @@ void STANDBY(){
 	-rotary dial up:
 		->DIALING_ACTIVE
 	*/
-	if(Serial) Serial.println("State: STANDBY");
-
+  //debounce
+  delay(100);
 	enterSleepMode();
 	
 	//printPinStates();
@@ -152,7 +175,6 @@ void DIALING(){
 	-incoming call:
 		->?
   	*/
-	if(Serial) Serial.println("State: DIALING");
 
 	static char number[50];
 	static char numberLength=0;
@@ -166,7 +188,7 @@ void DIALING(){
 	}
 
 	number[numberLength]=0;
-	Serial.println(number);
+	if(Serial)Serial.println(number);
 	
 	//do busy wait, as arduino timer libraries don't work properly
 	//TODO: implement this properly, if needed with hardware registers...
@@ -192,12 +214,8 @@ void DIALING(){
 	//-> just ignore it/pretend to be occupied?! would match a rotary phones behaviour...
 	}else if(numberLength>0){
 		number[numberLength]=0;
-		if(!fona.callPhone(number)){
-			Serial.println("Call failed!");
-		}else{
-			Serial.println("Calling...");
-		}
 		numberLength=0;
+    fona.callPhone(number);
 		state=&PHONING;
 	}
 }
@@ -215,7 +233,6 @@ void DIALING_ACTIVE(){
 	-incoming call:
 		->?
   	*/
-	if(Serial) Serial.println("State: DIALING_ACTIVE");
 
 	//wait a few msecs for debouncing
 	delay(50);
@@ -255,7 +272,6 @@ void PHONING(){
 		-close call
 		->STANDBY
 	*/
-	if(Serial) Serial.println("State: PHONING");
 	
 	//wait a few msecs for debouncing
 	delay(100);
@@ -263,7 +279,8 @@ void PHONING(){
 	waitForPinChange();
 
 	//printPinStates();
-	
+  //debounce
+	delay(100);
 	if(digitalRead(HOOK_PIN)!=HOOK_UP_STATE){
 		//laid down hook, hang up and goto STANDBY
 		fona.hangUp();
@@ -278,8 +295,6 @@ void RINGING(){
 	-incoming call ended:
 		->STANDBY
 	*/
-
-	if(Serial) Serial.println("State: RINGING");
 
 	//TODO: build busy wait loop, ringing the bell
 	//TODO: further enhance this to use a timer
