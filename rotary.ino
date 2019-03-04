@@ -42,7 +42,7 @@ void setup() {
 	pinMode(RING_PIN, INPUT_PULLUP);
 	pinMode(RING_OUT_PIN, OUTPUT);
   pinMode(SLEEP_PIN, OUTPUT);
-    
+
 	//setup fona
 	fonaSerial->begin(4800);
 	fona.begin(*fonaSerial);
@@ -50,6 +50,8 @@ void setup() {
 	fona.setAudio(FONA_EXTAUDIO);
 	fona.setVolume(10);
 
+  digitalWrite(RING_OUT_PIN, LOW);
+  digitalWrite(SLEEP_PIN, WAKE_STATE);
 	//wait for serial
 	//while(!Serial);
 
@@ -117,7 +119,7 @@ void STANDBY(){
 	enterSleepMode();
 	
 	//printPinStates();
-  digitalWrite(SLEEP_PIN, STATE_WAKE);
+  digitalWrite(SLEEP_PIN, WAKE_STATE);
   
 	if(digitalRead(RING_PIN)==RINGING_STATE){
 		//if its ringing, switch to RINGING 
