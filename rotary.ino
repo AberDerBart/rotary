@@ -49,6 +49,7 @@ void setup() {
 
 	fona.setAudio(FONA_EXTAUDIO);
 	fona.setVolume(10);
+  fona.setMicVolume(FONA_EXTAUDIO, 25);
 
   digitalWrite(RING_OUT_PIN, LOW);
   digitalWrite(SLEEP_PIN, WAKE_STATE);
@@ -87,14 +88,13 @@ void sleepPinInterrupt(void){
 	detachInterrupt(digitalPinToInterrupt(DIAL_PIN));
 }
 
-void enterSleepMode(){    
+void waitForPinChange(){    
 	//Serial.println(F("SLEEP"));
 	delay(100);
 	sleep_enable();
 	cli();
 	attachInterrupt(digitalPinToInterrupt(HOOK_PIN), sleepPinInterrupt, CHANGE);
 	attachInterrupt(digitalPinToInterrupt(DIAL_PIN), sleepPinInterrupt, CHANGE);
-  digitalWrite(SLEEP_PIN, SLEEP_STATE);
 	set_sleep_mode(SLEEP_MODE_IDLE);  
 	power_all_disable();
 	sei();
@@ -102,6 +102,11 @@ void enterSleepMode(){
 	sleep_disable();
 	power_all_enable();
 	//Serial.println(F("WACH"));
+}
+
+void enterSleepMode(){
+  digitalWrite(SLEEP_PIN, SLEEP_STATE);
+  waitForPinChange();
 }
 
 void STANDBY(){
@@ -255,7 +260,7 @@ void PHONING(){
 	//wait a few msecs for debouncing
 	delay(100);
 
-	enterSleepMode();
+	waitForPinChange();
 
 	//printPinStates();
 	
