@@ -34,7 +34,42 @@ void STANBY();
 void DIALING();
 void DIALING_ACTIVE();
 
-int reset = 1;
+
+char* stateString(void* state){
+  if(state == &STANDBY) return "STANDBY";
+  if(state == &DIALING) return "DIALING";
+  if(state == &DIALING_ACTIVE) return "DIALING_ACTIVE";
+  if(state == &PHONING) return "PHONING";
+  if(state == &RINGING) return "RINGING";
+  return "INVALID";
+}
+
+void debugState(){
+  static void* lastState = NULL;
+  if(updateSerial()){
+    if(lastState != state){
+      Serial.println(stateString(state));
+      lastState = state;
+    }
+  }
+}
+
+bool updateSerial(){
+	static bool connection = false;
+
+	if(Serial && !connection){
+		Serial.begin(115200);
+		connection = true;
+		Serial.println("rotary v0.1");
+	}
+
+	if(!Serial && connection){
+		Serial.end();
+		connection = false;
+	}
+
+	return connection;
+}
 
 void setup() {
 	//prepare the pins
@@ -56,13 +91,7 @@ void setup() {
   digitalWrite(RING_OUT_PIN, LOW);
   digitalWrite(SLEEP_PIN, WAKE_STATE);
 
-  if(Serial){
-	  //open serial with 115200 baud
-	  Serial.begin(115200);
-	  Serial.println("ROTARY V0.1");
-	  Serial.println("programmed by AberDerBart");
-	  Serial.println("based on Adafruit Feather FONA, thanks, guys!");
-  }
+  updateSerial();
 
 	//set initial state
 	state=&STANDBY;
@@ -70,31 +99,8 @@ void setup() {
 
 
 void loop() {
-  updateSerial();
+	debugState();
 	(*state)();
-}
-
-char* stateString(void* state){
-  if(state == &STANDBY) return "STANDBY";
-  if(state == &DIALING) return "DIALING";
-  if(state == &DIALING_ACTIVE) return "DIALING_ACTIVE";
-  if(state == &PHONING) return "PHONING";
-  if(state == &RINGING) return "RINGING";
-  return "INVALID";
-}
-
-void updateSerial(){
-  static void* lastState = NULL;
-  if(Serial){
-    if(lastState != state){
-      Serial.println(stateString(state));
-      lastState = state;
-      if(reset){
-        reset = 0;
-        Serial.println("reset");
-      }
-    }
-  }
 }
 
 void printPinStates(){
