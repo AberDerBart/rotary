@@ -19,8 +19,7 @@
 #define DIAL_EN_STATE LOW
 #define TICK_EN_STATE HIGH
 #define RINGING_STATE LOW
-#define SLEEP_STATE HIGH
-#define WAKE_STATE LOW
+#define SLEEP_EN_STATE HIGH
 
 SoftwareSerial fonaSS = SoftwareSerial(FONA_TX, FONA_RX);
 SoftwareSerial *fonaSerial = &fonaSS;
@@ -36,39 +35,12 @@ void DIALING_ACTIVE();
 
 
 char* stateString(void* state){
-  if(state == &STANDBY) return "STANDBY";
-  if(state == &DIALING) return "DIALING";
-  if(state == &DIALING_ACTIVE) return "DIALING_ACTIVE";
-  if(state == &PHONING) return "PHONING";
-  if(state == &RINGING) return "RINGING";
-  return "INVALID";
-}
-
-void debugState(){
-  static void* lastState = NULL;
-  if(updateSerial()){
-    if(lastState != state){
-      Serial.println(stateString(state));
-      lastState = state;
-    }
-  }
-}
-
-bool updateSerial(){
-	static bool connection = false;
-
-	if(Serial && !connection){
-		Serial.begin(115200);
-		connection = true;
-		Serial.println("rotary v0.1");
-	}
-
-	if(!Serial && connection){
-		Serial.end();
-		connection = false;
-	}
-
-	return connection;
+	if(state == &STANDBY) return "STANDBY";
+	if(state == &DIALING) return "DIALING";
+	if(state == &DIALING_ACTIVE) return "DIALING_ACTIVE";
+	if(state == &PHONING) return "PHONING";
+	if(state == &RINGING) return "RINGING";
+	return "INVALID";
 }
 
 void setup() {
@@ -78,7 +50,7 @@ void setup() {
 	pinMode(TICK_PIN, INPUT_PULLUP);
 	pinMode(RING_PIN, INPUT_PULLUP);
 	pinMode(RING_OUT_PIN, OUTPUT);
-  pinMode(SLEEP_PIN, OUTPUT);
+	pinMode(SLEEP_PIN, OUTPUT);
 
 	//setup fona
 	fonaSerial->begin(4800);
@@ -86,12 +58,10 @@ void setup() {
 
 	fona.setAudio(FONA_EXTAUDIO);
 	fona.setVolume(10);
-  fona.setMicVolume(FONA_EXTAUDIO, 25);
+	fona.setMicVolume(FONA_EXTAUDIO, 25);
 
-  digitalWrite(RING_OUT_PIN, LOW);
-  digitalWrite(SLEEP_PIN, WAKE_STATE);
-
-  updateSerial();
+	digitalWrite(RING_OUT_PIN, LOW);
+	digitalWrite(SLEEP_PIN, !SLEEP_EN_STATE);
 
 	//set initial state
 	state=&STANDBY;
@@ -99,7 +69,7 @@ void setup() {
 
 
 void loop() {
-	debugState();
+	updateSerial();
 	(*state)();
 }
 
@@ -121,21 +91,21 @@ void printPinStates(){
 }*/
 
 void waitForPinChange(){/*
-  delay(100);
+	delay(100);
 
-  set_sleep_mode(SLEEP_MODE_IDLE);  
-  cli();
-  //attachInterrupt(digitalPinToInterrupt(HOOK_PIN), sleepPinInterrupt, CHANGE);
-  //attachInterrupt(digitalPinToInterrupt(DIAL_PIN), sleepPinInterrupt, CHANGE);
-  sleep_enable();
+	set_sleep_mode(SLEEP_MODE_IDLE);  
+	cli();
+	//attachInterrupt(digitalPinToInterrupt(HOOK_PIN), sleepPinInterrupt, CHANGE);
+	//attachInterrupt(digitalPinToInterrupt(DIAL_PIN), sleepPinInterrupt, CHANGE);
+	sleep_enable();
 	sei();
 	sleep_cpu();
 	sleep_disable();*/
 }
 
 void enterSleepMode(){
-  digitalWrite(SLEEP_PIN, SLEEP_STATE);
-  waitForPinChange();
+	digitalWrite(SLEEP_PIN, SLEEP_EN_STATE);
+	waitForPinChange();
 }
 
 void STANDBY(){
@@ -148,12 +118,12 @@ void STANDBY(){
 	-rotary dial up:
 		->DIALING_ACTIVE
 	*/
-  //debounce
-  delay(100);
+	
+	//debounce
+	delay(100);
 	enterSleepMode();
 	
-	//printPinStates();
-  digitalWrite(SLEEP_PIN, WAKE_STATE);
+	digitalWrite(SLEEP_PIN, !SLEEP_EN_STATE);
   
 	if(digitalRead(RING_PIN)==RINGING_STATE){
 		//if its ringing, switch to RINGING 
@@ -221,7 +191,7 @@ void DIALING(){
 	}else if(numberLength>0){
 		number[numberLength]=0;
 		numberLength=0;
-    fona.callPhone(number);
+		fona.callPhone(number);
 		state=&PHONING;
 	}
 }
@@ -284,8 +254,7 @@ void PHONING(){
 
 	waitForPinChange();
 
-	//printPinStates();
-  //debounce
+	//debounce
 	delay(100);
 	if(digitalRead(HOOK_PIN)!=HOOK_UP_STATE){
 		//laid down hook, hang up and goto STANDBY
@@ -302,7 +271,6 @@ void RINGING(){
 		->STANDBY
 	*/
 
-	//TODO: build busy wait loop, ringing the bell
 	//TODO: further enhance this to use a timer
 	char hookState=digitalRead(HOOK_PIN);
 	char ringState=digitalRead(RING_PIN);
