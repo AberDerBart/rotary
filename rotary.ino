@@ -2,24 +2,7 @@
 #include <avr/power.h>
 #include "Adafruit_FONA.h"
 #include <SoftwareSerial.h>
-
-#define FONA_RX 9
-#define FONA_TX 8
-#define FONA_RST 4
-#define FONA_RI 7
-
-#define HOOK_PIN 2
-#define DIAL_PIN 1
-#define TICK_PIN 0
-#define RING_PIN 7
-#define RING_OUT_PIN 12
-#define SLEEP_PIN 5
-
-#define HOOK_UP_STATE HIGH
-#define DIAL_EN_STATE LOW
-#define TICK_EN_STATE HIGH
-#define RINGING_STATE LOW
-#define SLEEP_EN_STATE HIGH
+#include "config.h"
 
 SoftwareSerial fonaSS = SoftwareSerial(FONA_TX, FONA_RX);
 SoftwareSerial *fonaSerial = &fonaSS;
@@ -32,7 +15,6 @@ void PHONING();
 void STANBY();
 void DIALING();
 void DIALING_ACTIVE();
-
 
 char* stateString(void* state){
 	if(state == &STANDBY) return "STANDBY";
@@ -57,8 +39,8 @@ void setup() {
 	fona.begin(*fonaSerial);
 
 	fona.setAudio(FONA_EXTAUDIO);
-	fona.setVolume(10);
-	fona.setMicVolume(FONA_EXTAUDIO, 25);
+	fona.setVolume(VOLUME);
+	fona.setMicVolume(FONA_EXTAUDIO, MIC_VOLUME);
 
 	digitalWrite(RING_OUT_PIN, LOW);
 	digitalWrite(SLEEP_PIN, !SLEEP_EN_STATE);
