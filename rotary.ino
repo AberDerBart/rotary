@@ -14,7 +14,6 @@ void RINGING();
 void PHONING();
 void STANBY();
 void DIALING();
-void DIALING_ACTIVE();
 
 void setup() {
 	//prepare the pins
@@ -40,10 +39,38 @@ void setup() {
 	state=&STANDBY;
 }
 
-
 void loop() {
 	updateSerial();
 	(*state)();
+}
+
+char readDigit(){
+	const char digitMap[]={0,'1','2','3','4','5','6','7','8','9','0'};
+
+	//wait a few msecs for debouncing
+	delay(50);
+
+	unsigned char ticks=0;
+	char tickState=(digitalRead(TICK_PIN)==TICK_EN_STATE);
+	char lastTickState=tickState;
+
+	while(digitalRead(DIAL_PIN)==DIAL_EN_STATE){
+		lastTickState=tickState;
+		
+		//check for rising edge
+		tickState=(digitalRead(TICK_PIN)==TICK_EN_STATE);
+		if(lastTickState!=tickState && tickState){
+			ticks++;
+		}
+		//wait a few msecs for debouncing
+		delay(30);
+	}
+
+	if(ticks < 11){
+		return digitMap[ticks];
+	}else{
+		return 0;
+	}
 }
 
 void printPinStates(){
@@ -89,7 +116,7 @@ void STANDBY(){
 	-incoming call:
 		->RINGING
 	-rotary dial up:
-		->DIALING_ACTIVE
+		->perform speed dial
 	*/
 	
 	//debounce
@@ -110,12 +137,8 @@ void STANDBY(){
 	}
 }
 
-char digit=0;
-
 void DIALING(){
 	/*
-	-rotary dial up:
-		->DIALING_ACTIVE
 	-hook down:
 		->STANDBY
 	-3s passed and hook is up
@@ -123,22 +146,15 @@ void DIALING(){
 		->PHONING
 	-incoming call:
 		->?
+	-dial enable:
+		-read digit
+		->DIALING
   	*/
 
 	static char number[50];
 	static char numberLength=0;
 	unsigned long startMillis=millis();
 
-	//add digit to number to be called
-	if(digit && numberLength<49){
-		number[numberLength]=digit;
-		digit=0;
-		numberLength++;
-	}
-
-	number[numberLength]=0;
-	if(Serial)Serial.println(number);
-	
 	//do busy wait, as arduino timer libraries don't work properly
 	//TODO: implement this properly, if needed with hardware registers...
 	char hookState=digitalRead(HOOK_PIN);
@@ -151,67 +167,28 @@ void DIALING(){
 			dialState=digitalRead(DIAL_PIN);
 	}
 
-	//printPinStates();
-
+	//react to input state
 	if(hookState!=HOOK_UP_STATE){
 		//hook has been laid down, return to STANDBY
 		numberLength=0;
 		state=&STANDBY;
 	}else if(dialState==DIAL_EN_STATE){
-		state=&DIALING_ACTIVE;
+		//the rotary dial has been turned, read the digit
+		char digit = readDigit();
+		if(digit){
+			number[numberLength] = readDigit();
+			numberLength++;
+		}
+
+		state=&DIALING;
 	//TODO: implement ringing while dialing behaviour
 	//-> just ignore it/pretend to be occupied?! would match a rotary phones behaviour...
 	}else if(numberLength>0){
+		//timer expired, start the call
 		number[numberLength]=0;
 		numberLength=0;
 		fona.callPhone(number);
 		state=&PHONING;
-	}
-}
-
-const char digitMap[]={0,'1','2','3','4','5','6','7','8','9','0'};
-
-void DIALING_ACTIVE(){
-	/*
-	-count clicks
-	-rotary dial down:
-		-add cipher to number
-		->DIALING
-	-hook down:
-		->STANDBY
-	-incoming call:
-		->?
-  	*/
-
-	//wait a few msecs for debouncing
-	delay(50);
-
-	unsigned char ticks=0;
-	char tickState=(digitalRead(TICK_PIN)==TICK_EN_STATE);
-	char lastTickState=tickState;
-
-	while(digitalRead(DIAL_PIN)==DIAL_EN_STATE && digitalRead(HOOK_PIN)==HOOK_UP_STATE){
-		lastTickState=tickState;
-		
-		//check for rising edge
-		tickState=(digitalRead(TICK_PIN)==TICK_EN_STATE);
-		if(lastTickState!=tickState && tickState){
-			ticks++;
-		}
-		//wait a few msecs for debouncing
-		delay(30);
-	}
-
-	if(digitalRead(HOOK_PIN)!=HOOK_UP_STATE){
-		digit=0;
-		state=&STANDBY;
-	}else if(digitalRead(DIAL_PIN)!=DIAL_EN_STATE){
-		if(ticks < 11){
-			digit=digitMap[ticks];
-		}else{
-			digit=0;
-		}
-		state=&DIALING;
 	}
 }
 
