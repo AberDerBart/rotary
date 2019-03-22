@@ -14,6 +14,7 @@ void RINGING();
 void PHONING();
 void STANBY();
 void DIALING();
+void SPEED_DIAL();
 
 void setup() {
 	//prepare the pins
@@ -119,10 +120,27 @@ void STANDBY(){
 	}else if(digitalRead(HOOK_PIN)==HOOK_UP_STATE){
 		//if hook was taken off, switch to DIALING
 		state=&DIALING;
-	/*TODO: implement speed dial
 	}else if(digitalRead(DIAL_PIN)==DIAL_EN_STATE){
-		state=&DIALING;*/
+		state=&SPEED_DIAL;
 	}
+}
+
+void SPEED_DIAL(){
+
+	char digit = readDigit();
+
+	if(digit){
+		char* number = getSpeedDial(digit - '1');
+		if(*number){
+			//if the number is non-empty, call it
+			fona.callPhone(number);
+			state = &PHONING;
+			return;
+		}
+	}
+
+	//return to standby if anything goes wrong
+	state = &STANDBY;
 }
 
 void DIALING(){
