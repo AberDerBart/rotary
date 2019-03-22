@@ -73,18 +73,6 @@ char readDigit(){
 	}
 }
 
-void printPinStates(){
-	Serial.println("Pin states:");
-	Serial.print("HOOK: ");
-	Serial.println(digitalRead(HOOK_PIN)==LOW ? "LOW" : "HIGH");
-	Serial.print("DIAL: ");
-	Serial.println(digitalRead(DIAL_PIN)==LOW ? "LOW" : "HIGH");
-	Serial.print("TICK: ");
-	Serial.println(digitalRead(TICK_PIN)==LOW ? "LOW" : "HIGH");
-	Serial.print("RING: ");
-	Serial.println(digitalRead(RING_PIN)==LOW ? "LOW" : "HIGH");
-}
-
 /*void sleepPinInterrupt(void){
 	detachInterrupt(digitalPinToInterrupt(HOOK_PIN));
 	detachInterrupt(digitalPinToInterrupt(DIAL_PIN));
