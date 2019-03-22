@@ -1,3 +1,13 @@
+// defines debug strings for the states
+char* stateString(void* state){
+	if(state == &STANDBY) return "STANDBY";
+	if(state == &DIALING) return "DIALING";
+	if(state == &DIALING_ACTIVE) return "DIALING_ACTIVE";
+	if(state == &PHONING) return "PHONING";
+	if(state == &RINGING) return "RINGING";
+	return "INVALID";
+}
+
 // for handling serial connects and disconnects
 bool connectionActive(){
 	static bool active = false;
