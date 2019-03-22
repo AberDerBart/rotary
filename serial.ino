@@ -45,7 +45,9 @@ void setSpeedDial(){
 	Serial.read();
 
 	if(digit >= 0 && digit <= 8){
-		Serial.readBytesUntil('\n',getSpeedDial(digit),29);
+		char readBuffer[30];
+		Serial.readBytesUntil('\n',readBuffer,29);
+		setSpeedDial(digit, readBuffer);
 	}else{
 		Serial.println("e");
 	}
