@@ -210,6 +210,10 @@ void PHONING(){
 		//laid down hook, hang up and goto STANDBY
 		fona.hangUp();
 		state=&STANDBY;
+		//if for some reason the rotary dial was turned while hanging up, wait for it to rotate back
+		while(digitalRead(DIAL_PIN) == DIAL_EN_STATE){
+			delay(10);
+		}
 	}
 }
 
