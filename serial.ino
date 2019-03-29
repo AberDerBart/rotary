@@ -38,19 +38,25 @@ void printPinStates(){
 	Serial.println(digitalRead(RING_PIN)==LOW ? "LOW" : "HIGH");
 }
 
-void setSpeedDial(){
-	char digit = Serial.read() - '1';
-	
-	// read expected newline
-	Serial.read();
+void handleAtCommand(){
+	fona.write('A');
+	fona.write('T');
 
-	if(digit >= 0 && digit <= 8){
-		char readBuffer[30];
-		Serial.readBytesUntil('\n',readBuffer,29);
-		setSpeedDial(digit, readBuffer);
-	}else{
-		Serial.println("e");
+	Serial.print("AT");
+
+	for(char tmp = Serial.read(); tmp != '\r'; tmp = Serial.read()){
+		fona.write(tmp);
+		Serial.write(tmp);
 	}
+
+	fona.write('\r');
+	
+	while(fona.available()){
+		Serial.write(fona.read());
+		delay(1);
+	}
+
+	Serial.println("");
 }
 
 bool updateSerial(){
@@ -59,26 +65,17 @@ bool updateSerial(){
 	if(connectionActive()){
 
 		//if the state change, write it to serial
-		if(lastState != state){
+		if(lastState != state || 1){
 			Serial.println(stateString(state));
 			lastState = state;
 		}
 
-		if(Serial.available()){
-			// see serial.md for details on the serial communication
-			char function = Serial.read();
+		while(Serial.available()){
+			fona.write(Serial.read());
+		}
 
-			// read expected newline
-			Serial.read();
-
-			switch(function){
-			case 's':
-				setSpeedDial();
-				break;
-			default:
-				Serial.println("e");
-				break;
-			}
+		while(fona.available()){
+			Serial.write(fona.read());
 		}
 	}
 }

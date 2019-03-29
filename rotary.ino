@@ -29,9 +29,17 @@ void setup() {
 	fonaSerial->begin(4800);
 	fona.begin(*fonaSerial);
 
+	//indicate reboot
+	digitalWrite(RING_OUT_PIN,HIGH);
+	delay(200);
+	digitalWrite(RING_OUT_PIN,LOW);
+	delay(800);
+
 	fona.setAudio(FONA_EXTAUDIO);
 	fona.setVolume(VOLUME);
-	fona.setMicVolume(FONA_EXTAUDIO, MIC_VOLUME);
+	fona.sendCheckReply("AT+CMIC=1,5", "OK");
+	fona.sendCheckReply("AT+CPBS?","OK");
+	fona.sendCheckReply("AT+CPBS=\"SM\"", "OK");
 
 	digitalWrite(RING_OUT_PIN, LOW);
 	digitalWrite(SLEEP_PIN, !SLEEP_EN_STATE);
@@ -129,16 +137,6 @@ void SPEED_DIAL(){
 
 	char digit = readDigit();
 
-	if(digit){
-		char* number = getSpeedDial(digit - '1');
-		if(*number){
-			//if the number is non-empty, call it
-			fona.callPhone(number);
-			state = &PHONING;
-			return;
-		}
-	}
-
 	//return to standby if anything goes wrong
 	state = &STANDBY;
 }
@@ -205,11 +203,6 @@ void PHONING(){
 		->STANDBY
 	*/
 	
-	//wait a few msecs for debouncing
-	delay(100);
-
-	waitForPinChange();
-
 	//debounce
 	delay(100);
 	if(digitalRead(HOOK_PIN)!=HOOK_UP_STATE){
