@@ -15,6 +15,7 @@ void PHONING();
 void STANBY();
 void DIALING();
 void SPEED_DIAL();
+void ERROR();
 
 void setup() {
 	//prepare the pins
@@ -229,10 +230,23 @@ void RINGING(){
 			if(connectionActive()){
 				Serial.println("d: pickUp() failed");
 			}
-			state=&STANDBY;
+			state=&ERROR;
 		}
 	}else if(ringState!=RINGING_STATE){
 		//missed the call, goto STANDBY
 		state=&STANDBY;
+	}
+}
+
+void ERROR(){
+	Serial.println("ERROR");
+	delay(1000);
+	
+	if(digitalRead(HOOK_PIN) != HOOK_UP_STATE
+		&& digitalRead(DIAL_PIN) != DIAL_EN_STATE
+		&& digitalRead(TICK_PIN) != TICK_EN_STATE
+		&& digitalRead(RING_PIN) != RINGING_STATE
+	){
+		state = &STANDBY;
 	}
 }
