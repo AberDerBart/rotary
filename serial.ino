@@ -70,6 +70,7 @@ bool updateSerial(){
 			lastState = state;
 		}
 
+		//pass through serial communication
 		while(Serial.available()){
 			fona.write(Serial.read());
 		}

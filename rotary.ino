@@ -33,16 +33,19 @@ void setup() {
 	digitalWrite(RING_OUT_PIN,HIGH);
 	delay(200);
 	digitalWrite(RING_OUT_PIN,LOW);
+
+	//wait for fona to be ready
 	delay(800);
 
 	fona.setAudio(FONA_EXTAUDIO);
 	fona.setVolume(VOLUME);
+
+	//set mic boost
 	fona.sendCheckReply("AT+CMIC=1,5", "OK");
+
+	//configure phonebook for speed dial
 	fona.sendCheckReply("AT+CPBS?","OK");
 	fona.sendCheckReply("AT+CPBS=\"SM\"", "OK");
-
-	digitalWrite(RING_OUT_PIN, LOW);
-	digitalWrite(SLEEP_PIN, !SLEEP_EN_STATE);
 
 	//set initial state
 	state=&STANDBY;
