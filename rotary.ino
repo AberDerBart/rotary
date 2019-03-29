@@ -85,29 +85,6 @@ char readDigit(){
 	}
 }
 
-/*void sleepPinInterrupt(void){
-	detachInterrupt(digitalPinToInterrupt(HOOK_PIN));
-	detachInterrupt(digitalPinToInterrupt(DIAL_PIN));
-}*/
-
-void waitForPinChange(){/*
-	delay(100);
-
-	set_sleep_mode(SLEEP_MODE_IDLE);  
-	cli();
-	//attachInterrupt(digitalPinToInterrupt(HOOK_PIN), sleepPinInterrupt, CHANGE);
-	//attachInterrupt(digitalPinToInterrupt(DIAL_PIN), sleepPinInterrupt, CHANGE);
-	sleep_enable();
-	sei();
-	sleep_cpu();
-	sleep_disable();*/
-}
-
-void enterSleepMode(){
-	digitalWrite(SLEEP_PIN, SLEEP_EN_STATE);
-	waitForPinChange();
-}
-
 void STANDBY(){
 	/*
 	-go to sleep mode, turn everything off
@@ -120,19 +97,14 @@ void STANDBY(){
 	*/
 	
 	//debounce
-	delay(100);
-	enterSleepMode();
+	delay(50);
 	
 	digitalWrite(SLEEP_PIN, !SLEEP_EN_STATE);
   
 	if(digitalRead(RING_PIN)==RINGING_STATE){
-		//if its ringing, switch to RINGING 
 		state=&RINGING;
 	}else if(digitalRead(HOOK_PIN)==HOOK_UP_STATE){
-		//if hook was taken off, switch to DIALING
 		state=&DIALING;
-	}else if(digitalRead(DIAL_PIN)==DIAL_EN_STATE){
-		state=&SPEED_DIAL;
 	}
 }
 
@@ -236,6 +208,7 @@ void RINGING(){
 	digitalWrite(RING_OUT_PIN,HIGH);
 
 	while(ringState==RINGING_STATE && hookState!=HOOK_UP_STATE){
+		//TODO: remove this internal loop
 		if(millis()-startMillis>2500){
 			ringOut=((ringOut==HIGH)? LOW : HIGH);
 			digitalWrite(RING_OUT_PIN,ringOut);
@@ -253,8 +226,10 @@ void RINGING(){
 			//if call is still active, go to phoning
 			state=&PHONING;
 		}else{
-			//if call is not ative anymore, go to dialing 
-			state=&DIALING;
+			if(connectionActive()){
+				Serial.println("d: pickUp() failed");
+			}
+			state=&STANDBY;
 		}
 	}else if(ringState!=RINGING_STATE){
 		//missed the call, goto STANDBY
