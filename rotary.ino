@@ -156,7 +156,7 @@ void DIALING(){
 		//the rotary dial has been turned, read the digit
 		char digit = readDigit();
 		if(digit){
-			number[numberLength] = readDigit();
+			number[numberLength] = digit;
 			numberLength++;
 		}
 
