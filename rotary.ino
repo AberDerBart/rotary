@@ -86,6 +86,20 @@ char readDigit(){
 	}
 }
 
+void wake(){}
+
+void sleep(){
+	sleep_enable();
+	attachInterrupt(RING_PIN, wake, CHANGE);
+	attachInterrupt(HOOK_PIN, wake, CHANGE);
+	attachInterrupt(DIAL_PIN, wake, CHANGE);
+
+	digitalWrite(SLEEP_PIN, !SLEEP_EN_STATE);
+	set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+	sleep_cpu();
+	digitalWrite(SLEEP_PIN, SLEEP_EN_STATE);
+}
+
 void STANDBY(){
 	/*
 	-go to sleep mode, turn everything off
@@ -100,7 +114,10 @@ void STANDBY(){
 	//debounce
 	delay(50);
 	
-	digitalWrite(SLEEP_PIN, !SLEEP_EN_STATE);
+	sleep();
+
+	//debounce
+	delay(50);
   
 	if(digitalRead(RING_PIN)==RINGING_STATE){
 		state=&RINGING;
@@ -180,7 +197,12 @@ void PHONING(){
 	*/
 	
 	//debounce
-	delay(100);
+	delay(50);
+
+	sleep();
+
+	delay(50);
+
 	if(digitalRead(HOOK_PIN)!=HOOK_UP_STATE){
 		//laid down hook, hang up and goto STANDBY
 		fona.hangUp();
@@ -239,7 +261,6 @@ void RINGING(){
 }
 
 void ERROR(){
-	Serial.println("ERROR");
 	delay(1000);
 	
 	if(digitalRead(HOOK_PIN) != HOOK_UP_STATE

@@ -5,6 +5,7 @@ char* stateString(void* state){
 	if(state == &PHONING) return "PHONING";
 	if(state == &RINGING) return "RINGING";
 	if(state == &SPEED_DIAL) return "SPEED_DIAL";
+	if(state == &ERROR) return "ERROR";
 	return "INVALID";
 }
 
