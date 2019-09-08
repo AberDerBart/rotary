@@ -46,7 +46,7 @@ void setup() {
 
 	//configure phonebook for speed dial
 	fona.sendCheckReply("AT+CPBS?","OK");
-	fona.sendCheckReply("AT+CPBS=\"SM\"", "OK");
+	fona.sendCheckReply("AT+CPBS=\"ME\"", "OK");
 
 	//set initial state
 	state=&STANDBY;
