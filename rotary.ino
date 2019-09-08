@@ -95,7 +95,7 @@ void sleep(){
 	attachInterrupt(DIAL_PIN, wake, CHANGE);
 
 	digitalWrite(SLEEP_PIN, !SLEEP_EN_STATE);
-	set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+	set_sleep_mode(SLEEP_MODE_IDLE);
 	sleep_cpu();
 	digitalWrite(SLEEP_PIN, SLEEP_EN_STATE);
 }
