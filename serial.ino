@@ -60,14 +60,20 @@ void handleAtCommand(){
 	Serial.println("");
 }
 
+void printInfo(){
+	Serial.print("State:   ");
+	Serial.println(stateString(state));
+}
+
+
 bool updateSerial(){
 	static void* lastState = NULL;
 
 	if(connectionActive()){
 
 		//if the state change, write it to serial
-		if(lastState != state || 1){
-			Serial.println(stateString(state));
+		if(lastState != state){
+			printInfo();
 			lastState = state;
 		}
 
