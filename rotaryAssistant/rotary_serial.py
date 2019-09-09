@@ -23,16 +23,16 @@ class RotarySerial:
 
             resp.append(line)
 
-            for a in Rotary._ANSWERS.keys():
+            for a in RotarySerial._ANSWERS.keys():
                 if re.match(a, line):
                     return resp
         return resp
 
     def evalResponse(self, resp):
         for line in resp:
-            for a in Rotary._ANSWERS.keys():
+            for a in RotarySerial._ANSWERS.keys():
                 if re.match(a, line):
-                    return Rotary._ANSWERS[a]
+                    return RotarySerial._ANSWERS[a]
         return None
 
     def processCmd(self, cmd, timeout = None):
