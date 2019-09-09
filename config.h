@@ -9,7 +9,9 @@
 #define RING_PIN 7
 #define RING_OUT_PIN 12
 #define SLEEP_PIN 5
+
 #define LED_PIN 11
+#define LED_OFFSET 12
 
 #define HOOK_UP_STATE HIGH
 #define DIAL_EN_STATE LOW
