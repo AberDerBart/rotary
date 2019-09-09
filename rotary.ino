@@ -26,6 +26,9 @@ void setup() {
 	pinMode(RING_OUT_PIN, OUTPUT);
 	pinMode(SLEEP_PIN, OUTPUT);
 
+	//setup led ring
+	initLed();
+
 	//setup fona
 	fonaSerial->begin(4800);
 	fona.begin(*fonaSerial);
@@ -239,7 +242,12 @@ void RINGING(){
 		}
 		hookState=digitalRead(HOOK_PIN);
 		ringState=digitalRead(RING_PIN);
+
+		showRing();
+		delay(30);
 	}
+
+	clearLed();
 
 	digitalWrite(RING_OUT_PIN,LOW);
 
