@@ -50,17 +50,19 @@ void clearLed(){
 	pixels.show();
 }
 
-void showRing3(){
-	for(int rot = 0; rot < 64; rot++){
-		for(int i = 0; i < 16; i++){
-			int pixelBrightness = brightnessCurve[(i * 4 + rot) % 64];
-			int pixelBrightness2 = brightnessCurve[(i * 4 + rot + 8) % 64];
-			int pixelBrightness3 = brightnessCurve[(i * 4 + rot + 16) % 64];
-			pixels.setPixelColor(i, pixels.Color(pixelBrightness, pixelBrightness2, pixelBrightness3));
-		}
-		delay(30);
-		pixels.show();
+void showRing(){
+	static int rot = 0;
+
+	// rotate further each time this is called
+	rot++;
+
+	for(int i = 0; i < 16; i++){
+		int pixelBrightness = brightnessCurve[(i * 4 + rot) % 64];
+		int pixelBrightness2 = brightnessCurve[(i * 4 + rot + 8) % 64];
+		int pixelBrightness3 = brightnessCurve[(i * 4 + rot + 16) % 64];
+		pixels.setPixelColor(i, pixels.Color(pixelBrightness, pixelBrightness2, pixelBrightness3));
 	}
+	pixels.show();
 }
 
 void showNetwork(){
