@@ -31,6 +31,16 @@ Reading the digits dialed is easy as well, just wait for the first switch to ope
 
 ## Ringing
 
+The bell of the FeTAp 611 normaly is powered by 60V DC coming from the telephone line.
+As I am not proficient with power electronics and for simplicity I did not want to integrate additional electronics for providing this voltage.
+Luckily, I found a [solution](https://www.mikrocontroller.net/topic/65293) for this on mikrocontroller.net.
+The topic opener did a similar project as my first approach and just glued the phones vibration motor to the clapper of the bell.
+For driving the vibration motor I just used a transistor and a flyback diode.
+
+For the future I am considering rewinding the coils of the bell, such that they can be powered with a lower voltage.
+
+## Microphone and speaker
+
 ## State Machine
 
 ## LED backlight
