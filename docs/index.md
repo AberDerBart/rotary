@@ -41,8 +41,13 @@ For the future I am considering rewinding the coils of the bell, such that they 
 
 ## Microphone and speaker
 
+I simply replaced the microphone and speaker with a pair harvested from a broken PC headset.
+This is a simple solution that works perfectly well, the only issue is that the handset loses its weight, making it feel less authentic.
+
 ## State Machine
 
 ## LED backlight
 
 ## CLI tool
+
+## Issues and throwbacks
