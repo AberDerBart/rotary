@@ -46,6 +46,12 @@ This is a simple solution that works perfectly well, the only issue is that the 
 
 ## State Machine
 
+With the hook switch, rotary dial, bell, microphone and speaker, all basic component of the phone are there.
+The missing thing is the logic controlling it.
+For this purpose, I implemented a simple state machine that mimics the behaviour of the FeTAp on a phone line as closes as possible:
+
+![state machine](state_machine.svg)
+
 ## LED backlight
 
 ## CLI tool
