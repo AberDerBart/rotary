@@ -15,3 +15,24 @@ The phone worked, but there were some issues. Especially, I had no feedback from
 The Phone once again lay around, not being used until one day the Adafruit Feather FONA caught my eye.
 This was the solution to all my problems (as it turned out, it caused a few new problems), as it integrated a microcontroller with a GSM modem and battery charging circuitry on a neat little board.
 
+## Reading the hook and rotary dial
+
+The telephone hook in a FeTAp 611 is pretty straightforward to read, as it is just a simple switch.
+Just some simple code for debouncing is needed.
+
+The rotary dial has two switches.
+One opens when the dial is rotated away from its initial position, originally designed to disconnect the handset, so no clicking noises would be heard.
+The other one closes once per digit (once for a 1, twice for a 2, ..., 10 times for a 0) at a frequency of 10Hz.
+In the original hardware, this switch would short-out the telephone line to send a signal to the telephone agency.
+After each digit, there is a delay of at least 0.2s before the next, indicating the digit is complete.
+Within this time, the first switch closes.
+
+Reading the digits dialed is easy as well, just wait for the first switch to open, then count the number of times the second switch closes (debouncing of course) until the first switch closes again.
+
+## Ringing
+
+## State Machine
+
+## LED backlight
+
+## CLI tool
