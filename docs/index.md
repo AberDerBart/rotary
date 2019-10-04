@@ -76,7 +76,7 @@ Replacing the battery did the trick.
 
 ## Planned features
 
-Some additional features are planned.
-Primarily, I want to further integrate the LED ring by providing features to display battery and network status and error indications, for example if there is no network.
-
-Additionally, I want to add some utility features, especially a speed dial function, which shall be enabled by dialing a digit before picking up the hook.
+Some additional features are planned:
+ - Indication of battery and network status on the LED ring
+ - Muting: call indication only by LED, turning of the bell
+ - Speed dial by dialing a digit, then lifting the handset
