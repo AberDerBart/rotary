@@ -33,13 +33,11 @@ void setup() {
 	fonaSerial->begin(4800);
 	fona.begin(*fonaSerial);
 
-	//indicate reboot
-	digitalWrite(RING_OUT_PIN,HIGH);
-	delay(200);
-	digitalWrite(RING_OUT_PIN,LOW);
-
 	//wait for fona to be ready
 	delay(800);
+
+	//indicate reboot
+	indicateReboot();
 
 	fona.setAudio(FONA_EXTAUDIO);
 	fona.setVolume(VOLUME);
@@ -126,6 +124,8 @@ void STANDBY(){
 		state=&RINGING;
 	}else if(digitalRead(HOOK_PIN)==HOOK_UP_STATE){
 		state=&DIALING;
+	}else if(digitalRead(DIAL_PIN)==DIAL_EN_STATE){
+		state=&SPEED_DIAL;
 	}
 }
 
@@ -133,8 +133,51 @@ void SPEED_DIAL(){
 
 	char digit = readDigit();
 
-	//return to standby if anything goes wrong
-	state = &STANDBY;
+	if(!digit){
+		state = &STANDBY;
+		return;
+	}
+
+	unsigned long startMillis = millis();
+
+	char hookState = digitalRead(HOOK_PIN);
+	char dialState = digitalRead(DIAL_PIN);
+	char ringState = digitalRead(RING_PIN);
+
+	while(hookState != HOOK_UP_STATE
+	  && dialState != DIAL_EN_STATE
+	  && ringState != RINGING_STATE
+	  && millis() - startMillis < 3000){
+		hookState = digitalRead(HOOK_PIN);
+		dialState = digitalRead(DIAL_PIN);
+		ringState = digitalRead(RING_PIN);
+		if(millis() - startMillis >= 200){
+			if(millis() - startMillis < 1600){
+				fancyPie((millis() - startMillis - 200) / 1400., 0x00ff00, 0);
+			}else{
+				fancyPie((millis() - startMillis - 1600) / 1400., 0, 0x00ff00);
+			}
+		}
+	}
+
+	clearLed();
+
+	if(hookState == HOOK_UP_STATE){
+		//TODO: call speed dial number
+		char* cmd = "ATD>X;";
+		cmd[4] = digit;
+		fona.sendCheckReply(cmd,"OK");
+		state = PHONING;
+	}else if(dialState == DIAL_EN_STATE){
+		//overwrite the dialed number
+		state = SPEED_DIAL;
+	}else if(ringState == RINGING_STATE){
+		//incoming call overrides speed dial
+		state = RINGING;
+	}else{
+		//speed dial timed out, return to standby
+		state = STANDBY;
+	}
 }
 
 void DIALING(){
@@ -161,10 +204,10 @@ void DIALING(){
 	char dialState=digitalRead(DIAL_PIN);
 
 	while(hookState==HOOK_UP_STATE
-		&& dialState!=DIAL_EN_STATE
-		&& millis()-startMillis < 3000){
-			hookState=digitalRead(HOOK_PIN);
-			dialState=digitalRead(DIAL_PIN);
+	  && dialState!=DIAL_EN_STATE
+	  && millis()-startMillis < 3000){
+		hookState=digitalRead(HOOK_PIN);
+		dialState=digitalRead(DIAL_PIN);
 	}
 
 	//react to input state

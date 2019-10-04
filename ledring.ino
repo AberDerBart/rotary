@@ -8,6 +8,35 @@ void initLed(){
   pixels.begin();
 }
 
+uint32_t fadeColor(float progress, uint32_t c1, uint32_t c2){
+	uint32_t r = (uint32_t)((c1 & 0xff0000) * progress + (c2 & 0xff0000) * (1 - progress)) & 0xff0000;
+	uint32_t g = (uint32_t)((c1 & 0x00ff00) * progress + (c2 & 0x00ff00) * (1 - progress)) & 0x00ff00;
+	uint32_t b = (uint32_t)((c1 & 0x0000ff) * progress + (c2 & 0x0000ff) * (1 - progress)) & 0x0000ff;
+
+	return r | g | b;
+}
+
+void indicateReboot(){
+	pixels.fill(pixels.Color(0,0,255));
+	pixels.show();
+	delay(200);
+	clearLed();
+	pixels.show();
+}
+
+void fancyPie(float part, uint32_t c1, uint32_t c2){
+	for(int i = 0; i < 16; i++){
+		if(i + 1 < part * 16){
+			pixels.setPixelColor((i + LED_OFFSET) % 16, c1);
+		}else if(i < part * 16){
+			pixels.setPixelColor((i + LED_OFFSET) % 16, fadeColor(part * 16. - i, c1, c2));
+		}else{
+			pixels.setPixelColor((i + LED_OFFSET) % 16, c2);
+		}
+	}
+	pixels.show();
+}
+
 void showPie(int part, uint32_t c1, uint32_t c2){
   pixels.clear();
   for(int i = 0; i < 16; i++){
