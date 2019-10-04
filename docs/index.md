@@ -42,7 +42,7 @@ For the future I am considering rewinding the coils of the bell, such that they 
 ## Microphone and speaker
 
 I simply replaced the microphone and speaker with a pair harvested from a broken PC headset.
-This is a simple solution that works perfectly well, the only issue is that the handset loses its weight, making it feel less authentic.
+This is a simple solution that works perfectly well, the only issue is that the handset loses its weight, making it feel less authentic, but this can be fixed by just adding some weight.
 
 ## State Machine
 
@@ -54,6 +54,24 @@ For this purpose, I implemented a simple state machine that mimics the behaviour
 
 ## LED backlight
 
-## CLI tool
+One thing lacking in the original hardware ist output capabilities.
+It is only possible to play some tones via the speaker in the handset or of course to ring the bell, both of which are not appealing to me.
+I came up with the idea to add LEDs behind the center of the rotary dial, providing indirection lighting, as they are covered by a label in front of them.
+So far, I only implemented an animation upon ringing, but further features are planned.
 
 ## Issues and throwbacks
+
+All in all, the project did not go completely smoothly.
+I had two major throwbacks, both of which resulted in a period of several month of inactivity (at least concerning rotary).
+
+Some day, the SIM card I used broke, so I tried another one and it didn't work either, so I set the project aside.
+I considered the FONA broken, too and was about to throw it away, but I wanted to try it one last time and after several hours of searching in the forum for my issue, I found the solution.
+It turned out the SIM card holder has a loose fit and you have to put something behind some slimmer SIM cards for them to have proper contact.
+
+The second issue had to do with the power supply. On the Adafruit website for the Feather FONA, they suggest using li-ion batteries with at least 500mAh capacity.
+I used a 4400mAh battery and thought I was on the safe side.
+However, the protection circuitry in the battery package is limited to a current of 500mA, which is not enough for the current spikes needed by the SIM800H GSM modem of the Feather FONA.
+This resulted in occasional brownouts of the microcontroller.
+Replacing the battery did the trick.
+
+## 
