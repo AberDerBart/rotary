@@ -142,7 +142,7 @@ void waitChange(uint16_t timeout){
 	while(hookState != HOOK_UP_STATE
 	  && dialState != DIAL_EN_STATE
 	  && ringState != RINGING_STATE
-	  && millis() - startMillis < 3000){
+	  && millis() - startMillis < timeout){
 		hookState = digitalRead(HOOK_PIN);
 		dialState = digitalRead(DIAL_PIN);
 		ringState = digitalRead(RING_PIN);
