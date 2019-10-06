@@ -14,8 +14,10 @@ void RINGING();
 void PHONING();
 void STANBY();
 void DIALING();
-void SPEED_DIAL();
+void MENU();
 void ERROR();
+void BATTERY();
+void NETWORK();
 
 void setup() {
 	//prepare the pins
@@ -125,16 +127,80 @@ void STANDBY(){
 	}else if(digitalRead(HOOK_PIN)==HOOK_UP_STATE){
 		state=&DIALING;
 	}else if(digitalRead(DIAL_PIN)==DIAL_EN_STATE){
-		state=&SPEED_DIAL;
+		state=&MENU;
 	}
 }
 
-void SPEED_DIAL(){
+void waitChange(uint16_t timeout){
 
+	unsigned long startMillis = millis();
+
+	char hookState = digitalRead(HOOK_PIN);
+	char dialState = digitalRead(DIAL_PIN);
+	char ringState = digitalRead(RING_PIN);
+
+	while(hookState != HOOK_UP_STATE
+	  && dialState != DIAL_EN_STATE
+	  && ringState != RINGING_STATE
+	  && millis() - startMillis < 3000){
+		hookState = digitalRead(HOOK_PIN);
+		dialState = digitalRead(DIAL_PIN);
+		ringState = digitalRead(RING_PIN);
+		delay(100);
+	}
+
+	if(digitalRead(RING_PIN)==RINGING_STATE){
+		state=&RINGING;
+	}else if(digitalRead(HOOK_PIN)==HOOK_UP_STATE){
+		state=&DIALING;
+	}else if(digitalRead(DIAL_PIN)==DIAL_EN_STATE){
+		state=&MENU;
+	}else{
+		state=&STANDBY;
+	}
+}
+
+void BATTERY(){
+	uint16_t percent;
+	fona.getBattPercent(&percent);
+	fancyPie(percent/100., 0x00ff00, 0xff0000);
+
+	waitChange(2000);
+
+	clearLed();
+}
+
+void NETWORK(){
+	state = &STANDBY;
+	uint8_t rssi = fona.getRSSI();
+	fancyPie(rssi/22., 0x0000ff, 0xff0000);
+
+	waitChange(2000);
+
+	clearLed();
+}
+
+void MENU(){
 	char digit = readDigit();
 
 	if(!digit){
 		state = &STANDBY;
+		return;
+	}
+
+	if(digit == '0'){
+		//TODO: mute
+		state = &STANDBY;
+		return;
+	}
+
+	if(digit == '9'){
+		state = &BATTERY;
+		return;
+	}
+
+	if(digit == '8'){
+		state = &NETWORK;
 		return;
 	}
 
@@ -170,7 +236,7 @@ void SPEED_DIAL(){
 		state = PHONING;
 	}else if(dialState == DIAL_EN_STATE){
 		//overwrite the dialed number
-		state = SPEED_DIAL;
+		state = MENU;
 	}else if(ringState == RINGING_STATE){
 		//incoming call overrides speed dial
 		state = RINGING;
