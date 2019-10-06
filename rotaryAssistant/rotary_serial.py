@@ -64,7 +64,7 @@ class RotarySerial:
 
     def getSpeedDial(self):
         """reads the speed dial numbers from rotary"""
-        resp = self.processCmd('AT+CPBR=1,9', timeout = 30)
+        resp = self.processCmd('AT+CPBR=1,7', timeout = 30)
 
         speeddial = {}
 
