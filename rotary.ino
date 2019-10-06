@@ -18,6 +18,9 @@ void MENU();
 void ERROR();
 void BATTERY();
 void NETWORK();
+void TOGGLE_MUTE();
+
+bool muted = false;
 
 void setup() {
 	//prepare the pins
@@ -180,6 +183,16 @@ void NETWORK(){
 	clearLed();
 }
 
+void TOGGLE_MUTE(){
+	muted = !muted;
+
+	fancyPie(1, muted ? 0xff0000 : 0x00ff00, 0);
+
+	waitChange(300);
+
+	clearLed();
+}
+
 void MENU(){
 	char digit = readDigit();
 
@@ -189,8 +202,7 @@ void MENU(){
 	}
 
 	if(digit == '0'){
-		//TODO: mute
-		state = &STANDBY;
+		state = &TOGGLE_MUTE;
 		return;
 	}
 
@@ -340,13 +352,17 @@ void RINGING(){
 	unsigned long startMillis=millis();
 	char ringOut=HIGH;
 
-	digitalWrite(RING_OUT_PIN,HIGH);
+	if(!muted){
+		digitalWrite(RING_OUT_PIN,HIGH);
+	}
 
 	while(ringState==RINGING_STATE && hookState!=HOOK_UP_STATE){
 		//TODO: remove this internal loop
 		if(millis()-startMillis>2500){
 			ringOut=((ringOut==HIGH)? LOW : HIGH);
-			digitalWrite(RING_OUT_PIN,ringOut);
+			if(!muted){
+				digitalWrite(RING_OUT_PIN,ringOut);
+			}
 			startMillis=millis();
 		}
 		hookState=digitalRead(HOOK_PIN);
@@ -358,7 +374,9 @@ void RINGING(){
 
 	clearLed();
 
-	digitalWrite(RING_OUT_PIN,LOW);
+	if(!muted){
+		digitalWrite(RING_OUT_PIN,LOW);
+	}
 
 	if(hookState==HOOK_UP_STATE){
 		//hook has been picked up

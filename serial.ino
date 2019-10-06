@@ -8,6 +8,7 @@ char* stateString(void* state){
 	if(state == &BATTERY) return "BATTERY";
 	if(state == &NETWORK) return "NETWORK";
 	if(state == &ERROR) return "ERROR";
+	if(state == &TOGGLE_MUTE) return "TOGGLE_MUTE";
 	return "INVALID";
 }
 
