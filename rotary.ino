@@ -276,6 +276,11 @@ void DIALING(){
 	static char numberLength=0;
 	unsigned long startMillis=millis();
 
+	//play dial tone
+	if(numberLength == 0){
+		fona.playToolkitTone(1, 255 * 60 * 1000);
+	}
+
 	//do busy wait, as arduino timer libraries don't work properly
 	//TODO: implement this properly, if needed with hardware registers...
 	char hookState=digitalRead(HOOK_PIN);
@@ -287,6 +292,8 @@ void DIALING(){
 		hookState=digitalRead(HOOK_PIN);
 		dialState=digitalRead(DIAL_PIN);
 	}
+
+	fona.playToolkitTone(1, 10);
 
 	//react to input state
 	if(hookState!=HOOK_UP_STATE){
