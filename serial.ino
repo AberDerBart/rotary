@@ -66,6 +66,8 @@ void handleAtCommand(){
 void printInfo(){
 	Serial.print("State:   ");
 	Serial.println(stateString(state));
+	Serial.print("Bell     ");
+	Serial.println(muted ? "OFF":"ON");
 }
 
 
