@@ -96,14 +96,18 @@ void wake(){}
 
 void sleep(){
 	sleep_enable();
-	attachInterrupt(RING_PIN, wake, CHANGE);
-	attachInterrupt(HOOK_PIN, wake, CHANGE);
-	attachInterrupt(DIAL_PIN, wake, CHANGE);
+	attachInterrupt(digitalPinToInterrupt(RING_PIN), wake, CHANGE);
+	attachInterrupt(digitalPinToInterrupt(HOOK_PIN), wake, CHANGE);
+	attachInterrupt(digitalPinToInterrupt(DIAL_PIN), wake, CHANGE);
 
 	digitalWrite(SLEEP_PIN, !SLEEP_EN_STATE);
 	set_sleep_mode(SLEEP_MODE_IDLE);
 	sleep_cpu();
 	digitalWrite(SLEEP_PIN, SLEEP_EN_STATE);
+
+	detachInterrupt(digitalPinToInterrupt(RING_PIN));
+	detachInterrupt(digitalPinToInterrupt(HOOK_PIN));
+	detachInterrupt(digitalPinToInterrupt(DIAL_PIN));
 }
 
 void STANDBY(){
@@ -274,7 +278,6 @@ void DIALING(){
 
 	static char number[50];
 	static char numberLength=0;
-	unsigned long startMillis=millis();
 
 	//play dial tone
 	if(numberLength == 0){
@@ -283,6 +286,7 @@ void DIALING(){
 
 	//do busy wait, as arduino timer libraries don't work properly
 	//TODO: implement this properly, if needed with hardware registers...
+	unsigned long startMillis=millis();
 	char hookState=digitalRead(HOOK_PIN);
 	char dialState=digitalRead(DIAL_PIN);
 
