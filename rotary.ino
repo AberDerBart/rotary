@@ -297,7 +297,10 @@ void DIALING(){
 		dialState=digitalRead(DIAL_PIN);
 	}
 
-	fona.playToolkitTone(1, 10);
+	if(numberLength == 0){
+		//fona.playToolkitTone(1, 10);
+		fona.sendCheckReply("AT+STTONE=0", "OK");
+	}
 
 	//react to input state
 	if(hookState!=HOOK_UP_STATE){
