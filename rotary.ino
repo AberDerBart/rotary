@@ -34,6 +34,9 @@ void setup() {
 	//setup led ring
 	initLed();
 
+	//start the serial connection
+	initSerial();
+
 	//setup fona
 	fonaSerial->begin(4800);
 	fona.begin(*fonaSerial);
@@ -262,6 +265,8 @@ void MENU(){
 	}
 }
 
+char number[50];
+
 void DIALING(){
 	/*
 	-hook down:
@@ -276,7 +281,6 @@ void DIALING(){
 		->DIALING
   	*/
 
-	static char number[50];
 	static char numberLength=0;
 
 	//play dial tone
@@ -306,6 +310,7 @@ void DIALING(){
 	if(hookState!=HOOK_UP_STATE){
 		//hook has been laid down, return to STANDBY
 		numberLength=0;
+		number[0] = 0;
 		state=&STANDBY;
 	}else if(dialState==DIAL_EN_STATE){
 		//the rotary dial has been turned, read the digit
@@ -313,6 +318,7 @@ void DIALING(){
 		if(digit){
 			number[numberLength] = digit;
 			numberLength++;
+			number[numberLength] = 0;
 		}
 
 		state=&DIALING;
@@ -398,9 +404,6 @@ void RINGING(){
 			//if call is still active, go to phoning
 			state=&PHONING;
 		}else{
-			if(connectionActive()){
-				Serial.println("d: pickUp() failed");
-			}
 			state=&ERROR;
 		}
 	}else if(ringState!=RINGING_STATE){

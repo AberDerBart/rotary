@@ -12,24 +12,6 @@ char* stateString(void* state){
 	return "INVALID";
 }
 
-// for handling serial connects and disconnects
-bool connectionActive(){
-	static bool active = false;
-
-	if(Serial && !active){
-		Serial.begin(115200);
-		active = true;
-		Serial.println("rotary v0.1");
-	}
-
-	if(!Serial && active){
-		Serial.end();
-		active = false;
-	}
-
-	return active;
-}
-
 void printPinStates(){
 	Serial.println("Pin states:");
 	Serial.print("HOOK: ");
@@ -66,16 +48,20 @@ void handleAtCommand(){
 void printInfo(){
 	Serial.print("State:   ");
 	Serial.println(stateString(state));
-	Serial.print("Bell     ");
+	Serial.print("Bell:    ");
 	Serial.println(muted ? "OFF":"ON");
+	Serial.print("Dialed:  ");
+	Serial.println(number);
 }
 
+void initSerial(){
+	Serial.begin(115200);
+}
 
 bool updateSerial(){
 	static void* lastState = NULL;
 
-	if(connectionActive()){
-
+	if(Serial.availableForWrite() == SERIAL_BUFFER_SIZE){
 		//if the state change, write it to serial
 		if(lastState != state){
 			printInfo();
